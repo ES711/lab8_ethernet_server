@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 #include "lwip.h"
 #include "gpio.h"
 
@@ -71,6 +72,7 @@ char smsgc[200];
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+void MX_FREERTOS_Init(void);
 /* USER CODE BEGIN PFP */
 /* USER CODE END PFP */
 
@@ -107,7 +109,7 @@ void taskTCP_Init(void *pvParm){
 				//establish new connection success
 				if(accept == ERR_OK){
 					//if a client connect into server -> turn on LED_C8
-					HAL_GPIO_WritePin(LED_C8_GPIO_Port, LED_C8_Pin, 1);
+					//HAL_GPIO_WritePin(LED_C8_GPIO_Port, LED_C8_Pin, 1);
 					//when server receive data from client -> process buf until end of nuf
 					while(netconn_recv(newconn, &bufTCP) == ERR_OK){
 						do{
@@ -121,7 +123,7 @@ void taskTCP_Init(void *pvParm){
 					}
 				}
 				//if nomore client connect into server -> turn off LED_C8
-				HAL_GPIO_WritePin(LED_C8_GPIO_Port, LED_C8_Pin, 0);
+				//HAL_GPIO_WritePin(LED_C8_GPIO_Port, LED_C8_Pin, 0);
 				netconn_close(newconn);
 				netconn_delete(newconn);
 			}
@@ -143,6 +145,7 @@ void taskETH(void *pvParm){
 	xTaskCreate(taskTCP_Init, "TCP init", 1024, NULL, 0, &handleTCP_Init);
 	
 	while(1){
+		HAL_GPIO_TogglePin(LED_C8_GPIO_Port, LED_C8_Pin);
 		vTaskDelay(100);
 	}
 }
@@ -181,6 +184,13 @@ int main(void)
   /* USER CODE BEGIN 2 */
 	xTaskCreate(taskETH, "ETH example", 1024, NULL, 1, &handleETH);
 	vTaskStartScheduler();
+  /* USER CODE END 2 */
+
+  /* Call init function for freertos objects (in freertos.c) */
+  MX_FREERTOS_Init();
+
+  /* Start scheduler */
+  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
